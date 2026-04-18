@@ -166,6 +166,8 @@ docker run --name hcp-crm-postgres -e POSTGRES_USER=user -e POSTGRES_PASSWORD=pa
 
 ## Known Limitations
 
+- **The assessment originally specified gemma2-9b-it as the primary LLM. This model was officially decommissioned by Groq on October 8, 2025, after this assessment was issued. The official Groq recommended replacement, llama-3.1-8b-instant, is used instead. Reference: https://console.groq.com/docs/deprecations**
+
 - **Voice Note** feature is rendered as disabled with a "Coming Soon" tooltip. No audio functionality is implemented.
 - **Conversation history** is capped at the last 10 messages sent to the agent per session.
 - **Authentication** is out of scope — no login, no role-based access control.

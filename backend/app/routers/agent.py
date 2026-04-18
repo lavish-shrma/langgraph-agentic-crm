@@ -28,6 +28,8 @@ class ChatResponse(BaseModel):
     interaction_id: Optional[int] = None
     tools_used: list[str] = []
     suggested_follow_ups: list[str] = []
+    extracted_fields: Optional[dict] = None
+    partial_update: Optional[dict] = None
 
 
 @router.post("/agent/chat", summary="Chat with AI agent", response_model=ChatResponse)
@@ -65,6 +67,8 @@ async def agent_chat(request: ChatRequest):
         interaction_id = None
         tools_used = []
         suggested_follow_ups = []
+        extracted_fields = None
+        partial_update = None
 
         for msg in result["messages"]:
             if hasattr(msg, "tool_calls") and msg.tool_calls:
@@ -72,13 +76,17 @@ async def agent_chat(request: ChatRequest):
                     tools_used.append(tc["name"])
 
             if hasattr(msg, "name") and msg.name:
-                # This is a ToolMessage — parse for interaction_id and suggestions
+                # This is a ToolMessage — parse for interaction_id, extracted/updated fields and suggestions
                 try:
                     tool_data = json.loads(msg.content)
                     if tool_data.get("interaction_id"):
                         interaction_id = tool_data["interaction_id"]
                     if tool_data.get("suggested_follow_ups"):
                         suggested_follow_ups = tool_data["suggested_follow_ups"]
+                    if tool_data.get("extracted_fields"):
+                        extracted_fields = tool_data["extracted_fields"]
+                    if tool_data.get("partial_update"):
+                        partial_update = tool_data["partial_update"]
                 except (json.JSONDecodeError, TypeError):
                     pass
 
@@ -96,6 +104,8 @@ async def agent_chat(request: ChatRequest):
             interaction_id=interaction_id,
             tools_used=list(set(tools_used)),
             suggested_follow_ups=suggested_follow_ups,
+            extracted_fields=extracted_fields,
+            partial_update=partial_update,
         )
 
     except Exception as e:

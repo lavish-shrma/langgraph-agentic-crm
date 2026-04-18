@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 # Primary model for general tasks and extraction
 primary_llm = ChatGroq(
     api_key=settings.GROQ_API_KEY,
-    model="gemma2-9b-it",
+    model="llama-3.1-8b-instant",
     temperature=0.1,
     max_tokens=2048,
 )
@@ -55,7 +55,7 @@ async def invoke_with_retry(llm, messages, max_retries=3):
 
 
 def get_primary_llm():
-    """Get the primary LLM (gemma2-9b-it)."""
+    """Get the primary LLM (llama-3.1-8b-instant (official Groq replacement for decommissioned gemma2-9b-it))."""
     return primary_llm
 
 

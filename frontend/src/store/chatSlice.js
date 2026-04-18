@@ -26,8 +26,12 @@ export const sendMessage = createAsyncThunk(
       dispatch(addMessage({ role: 'assistant', content: data.response }));
 
       // If agent extracted interaction fields, populate the form
-      if (data.interaction_id) {
-        // The agent logged an interaction — we can note this
+      if (data.extracted_fields) {
+        dispatch(populateFromAgent(data.extracted_fields));
+      }
+
+      if (data.partial_update) {
+        dispatch(populateFromAgent(data.partial_update));
       }
 
       if (data.suggested_follow_ups && data.suggested_follow_ups.length > 0) {

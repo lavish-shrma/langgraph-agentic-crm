@@ -38,19 +38,19 @@ async def edit_interaction(interaction_id: int, updates: str) -> str:
                 })
 
             # Apply updates
-            updated_fields = []
+            partial_update = {}
             for key, value in update_dict.items():
                 if hasattr(interaction, key) and key not in ("id", "created_at", "hcp_id"):
                     setattr(interaction, key, value)
-                    updated_fields.append(key)
+                    partial_update[key] = value
 
             await session.commit()
 
             return json.dumps({
                 "success": True,
                 "interaction_id": interaction_id,
-                "message": f"Successfully updated interaction {interaction_id}. Updated fields: {', '.join(updated_fields)}.",
-                "updated_fields": updated_fields,
+                "message": f"Successfully updated interaction {interaction_id}. Updated fields: {', '.join(partial_update.keys())}.",
+                "partial_update": partial_update,
             })
 
     except json.JSONDecodeError:
