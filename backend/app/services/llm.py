@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 # Primary model for general tasks and extraction
 primary_llm = ChatGroq(
     api_key=settings.GROQ_API_KEY,
-    model="llama-3.1-8b-instant",
+    model="gemma2-9b-it",
     temperature=0.1,
     max_tokens=2048,
 )
@@ -16,7 +16,7 @@ primary_llm = ChatGroq(
 # Secondary model for heavier reasoning (summarization)
 secondary_llm = ChatGroq(
     api_key=settings.GROQ_API_KEY,
-    model="llama-3.1-8b-instant",
+    model="llama-3.3-70b-versatile",
     temperature=0.3,
     max_tokens=2048,
 )
