@@ -1,7 +1,7 @@
+from typing import Optional
 import json
 import logging
 from datetime import datetime
-from typing import Optional
 
 from langchain_core.tools import tool
 from sqlalchemy import select
