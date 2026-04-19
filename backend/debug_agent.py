@@ -36,5 +36,5 @@ async def debug_agent(message: str):
         print(f"\nERROR: {str(e)}")
 
 if __name__ == "__main__":
-    test_msg = "Schedule a follow-up with Dr. Ananya Iyer on 2026-05-20 to discuss latest neurology clinical data."
+    test_msg = "Summarize my last 3 visits with Dr. Vikram Patel."
     asyncio.run(debug_agent(test_msg))
