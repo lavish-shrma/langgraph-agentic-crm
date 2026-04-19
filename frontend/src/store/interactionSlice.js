@@ -68,8 +68,17 @@ const interactionSlice = createSlice({
     populateFromAgent(state, action) {
       const fields = action.payload;
       Object.keys(fields).forEach((key) => {
-        if (key in state) {
-          state[key] = fields[key];
+        const value = fields[key];
+        if (key === 'samples_distributed') {
+          state.samples = Array.isArray(value) ? value : [];
+        } else if (key in state) {
+          if (Array.isArray(state[key])) {
+            state[key] = Array.isArray(value) ? value : [];
+          } else if (typeof state[key] === 'string') {
+            state[key] = value !== null && value !== undefined ? String(value) : '';
+          } else {
+            state[key] = value;
+          }
         }
       });
       state.source = 'chat';

@@ -17,7 +17,7 @@ async def test_models():
             print(f"Testing {m}...")
             resp = await llm.ainvoke([HumanMessage(content="test")])
             print(f"SUCCESS {m}")
-            return
+            pass
         except Exception as e:
             print(f"FAILED {m}: {str(e)}")
 

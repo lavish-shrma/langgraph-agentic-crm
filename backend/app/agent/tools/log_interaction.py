@@ -176,13 +176,13 @@ async def log_interaction(text: str, hcp_name: Optional[str] = None, interaction
             return json.dumps({
                 "success": True,
                 "interaction_id": interaction.id,
-                "message": f"Successfully logged {extracted['interaction_type']} interaction with {hcp.name} on {extracted['date']}.",
+                "message": f"Interaction logged successfully. ID: {interaction.id}",
                 "suggested_follow_ups": follow_ups,
                 "extracted_fields": {
                     "hcp_id": hcp.id,
                     "hcp_name": hcp.name,
                     "interaction_type": extracted.get("interaction_type"),
-                    "date": str(extracted.get("date")),
+                    "date": str(extracted.get("date")) if extracted.get("date") else None,
                     "time": extracted.get("time"),
                     "attendees": extracted.get("attendees"),
                     "topics_discussed": extracted.get("topics_discussed"),
@@ -192,6 +192,7 @@ async def log_interaction(text: str, hcp_name: Optional[str] = None, interaction
                     "follow_up_notes": extracted.get("follow_up_notes"),
                     "follow_up_date": str(extracted.get("follow_up_date")) if extracted.get("follow_up_date") else None,
                     "location": hcp.institution,
+                    "samples_distributed": extracted.get("samples") or [],
                 },
             })
 

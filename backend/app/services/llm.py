@@ -22,7 +22,7 @@ secondary_llm = ChatGroq(
 )
 
 
-async def invoke_with_retry(llm, messages, max_retries=3):
+async def invoke_with_retry(llm, messages, max_retries=7):
     """Invoke LLM with exponential backoff retry logic.
 
     Args:
@@ -48,9 +48,15 @@ async def invoke_with_retry(llm, messages, max_retries=3):
                 logger.error(f"All {max_retries} LLM call attempts failed.")
                 raise Exception("AI service temporarily unavailable. Please try again in a moment.")
 
-            # Exponential backoff: 1s, 2s, 4s
-            wait_time = 2 ** attempt
-            logger.info(f"Retrying in {wait_time}s...")
+            # Special handling for 429 (Rate Limit) errors
+            if "429" in error_msg:
+                wait_time = 30
+                logger.info(f"Rate limit hit (429). Waiting {wait_time}s before retry...")
+            else:
+                # Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s
+                wait_time = 2 ** attempt
+                logger.info(f"Retrying in {wait_time}s...")
+            
             await asyncio.sleep(wait_time)
 
 

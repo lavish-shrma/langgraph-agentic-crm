@@ -1,5 +1,6 @@
 import json
 import logging
+import datetime
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -40,7 +41,9 @@ async def agent_chat(request: ChatRequest):
 
     try:
         # Build messages list from conversation history
-        messages = [SystemMessage(content=SYSTEM_PROMPT)]
+        today_str = datetime.date.today().isoformat()
+        current_system_prompt = SYSTEM_PROMPT.format(today=today_str)
+        messages = [SystemMessage(content=current_system_prompt)]
 
         for msg in request.conversation_history:
             if msg.role == "user":
