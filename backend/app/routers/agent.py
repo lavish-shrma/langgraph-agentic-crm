@@ -102,8 +102,28 @@ async def agent_chat(request: ChatRequest):
         if not response_text:
             response_text = "I processed your request. Please check the results."
 
+        # Enforce Response Formatting Rules as a safety net
+        if "log_interaction" in tools_used:
+            if not response_text.startswith("Interaction logged successfully."):
+                response_text = f"Interaction logged successfully. ID: {interaction_id or 'unknown'}\n\n{response_text}"
+        elif "edit_interaction" in tools_used:
+            if not response_text.startswith("Interaction updated successfully."):
+                response_text = f"Interaction updated successfully. ID: {interaction_id or 'unknown'}\n\n{response_text}"
+        elif "schedule_follow_up" in tools_used:
+            # We don't overwrite if it looks like the LLM already formatted it correctly, 
+            # but if it has "Interaction logged", we definitely clean it up.
+            if "Interaction logged successfully" in response_text:
+                # Most likely the LLM hallucinated the prefix, we'll try to use the Tool outcome directly or clean it.
+                response_text = response_text.replace("Interaction logged successfully.", "Follow-up scheduled successfully.")
+        elif "get_hcp_profile" in tools_used or "summarize_interactions" in tools_used:
+            # Strip any accidental "Interaction logged successfully" prefix
+            if "Interaction logged successfully" in response_text:
+                lines = response_text.split('\n')
+                filter_lines = [l for l in lines if "Interaction logged successfully" not in l and "ID:" not in l]
+                response_text = '\n'.join(filter_lines).strip()
+
         return ChatResponse(
-            response=response_text,
+            response=response_text.strip(),
             interaction_id=interaction_id,
             tools_used=list(set(tools_used)),
             suggested_follow_ups=suggested_follow_ups,
