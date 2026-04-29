@@ -24,11 +24,11 @@ async def summarize_interactions(hcp_name: Optional[str] = None, hcp_id: Optiona
         count: Number of recent interactions to summarize (default 5).
     """
     try:
-        count = min(max(count, 1), 20)  # Cap between 1 and 20
+        count = min(max(int(count), 1), 20)  # Cap between 1 and 20
         async with async_session_factory() as session:
             # Find HCP
             if hcp_id:
-                stmt = select(HCP).where(HCP.id == hcp_id)
+                stmt = select(HCP).where(HCP.id == int(hcp_id))
             elif hcp_name:
                 stmt = select(HCP).where(HCP.name.ilike(f"%{hcp_name}%"))
             else:
@@ -38,12 +38,15 @@ async def summarize_interactions(hcp_name: Optional[str] = None, hcp_id: Optiona
                 })
 
             result = await session.execute(stmt)
-            hcp = result.scalar_one_or_none()
+            # Use first() instead of scalar_one_or_none() to avoid MultipleResultsFound 
+            # if multiple HCPs match the name.
+            hcp = result.scalars().first()
 
             if not hcp:
+                logger.error(f"Summarize tool: HCP lookup failed. hcp_name='{hcp_name}', hcp_id='{hcp_id}'")
                 return json.dumps({
                     "success": False,
-                    "message": f"HCP not found.",
+                    "message": f"HCP not found for name '{hcp_name}' or id '{hcp_id}'.",
                 })
 
             # Fetch last N interactions
@@ -55,8 +58,11 @@ async def summarize_interactions(hcp_name: Optional[str] = None, hcp_id: Optiona
             )
             interactions_result = await session.execute(interactions_stmt)
             interactions = interactions_result.scalars().all()
+            
+            logger.info(f"Summarize tool: HCP matched '{hcp.name}' (ID: {hcp.id}). Found {len(interactions)} interactions.")
 
             if not interactions:
+                logger.warning(f"Summarize tool: No interactions found for HCP '{hcp.name}' (ID: {hcp.id}). Query count: {count}")
                 return json.dumps({
                     "success": True,
                     "message": f"No interactions found for {hcp.name}.",
@@ -92,6 +98,7 @@ Provide a professional, concise summary paragraph:"""
                 "hcp_name": hcp.name,
                 "interactions_count": len(interactions),
                 "summary": response.content.strip(),
+                "agent_instruction": "Display this summary directly to the user. DO NOT say that no interactions are logged, and DO NOT ask them to log an interaction. Just provide the summary."
             })
 
     except Exception as e:

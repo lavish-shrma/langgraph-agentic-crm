@@ -1,0 +1,10 @@
+{
+  "response": "The summary of your last 3 visits with Dr. Vikram Patel is provided above.\n\nSummary:\nRecent interactions with Dr. Vikram Patel, an Endocrinologist at AIIMS, New Delhi, have centered around discussions on diabetes management solutions and prescription trends. Key themes included the introduction of GlucoStable, a new diabetes management solution, and CardioMax, with the doctor expressing concerns about cost but providing positive feedback on GlucoStable's patient follow-up results. Additionally, a follow-up call on NeuroCalm prescription trends yielded positive patient feedback, despite the doctor's negative sentiment due to the need for more data. Action items include providing more information on patient assistance programs for GlucoStable and gathering additional data on NeuroCalm to address the doctor's concerns, with a potential trial of CardioMax on the horizon. Overall, the interactions have been neutral to positive, with opportunities for further collaboration and data-driven discussions to drive better patient outcomes.",
+  "interaction_id": null,
+  "tools_used": [
+    "summarize_interactions"
+  ],
+  "suggested_follow_ups": [],
+  "extracted_fields": null,
+  "partial_update": null
+}

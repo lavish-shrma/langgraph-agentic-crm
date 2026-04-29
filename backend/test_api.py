@@ -1,12 +1,11 @@
-import urllib.request
-import urllib.error
+import httpx
+import asyncio
+import json
 
-try:
-    response = urllib.request.urlopen('http://localhost:8000/api/interactions')
-    print("SUCCESS:")
-    print(response.read().decode())
-except urllib.error.HTTPError as e:
-    print(f"HTTP ERROR {e.code}:")
-    print(e.read().decode())
-except Exception as e:
-    print(f"ERROR: {e}")
+async def run():
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.post("http://localhost:8000/api/agent/chat", json={"message": "Summarize my last 3 visits with Dr. Vikram Patel.", "conversation_history": []})
+        with open("test_api_out.json", "w") as f:
+            json.dump(r.json(), f, indent=2)
+
+asyncio.run(run())

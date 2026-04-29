@@ -73,6 +73,8 @@ async def agent_chat(request: ChatRequest):
         extracted_fields = None
         partial_update = None
 
+        tool_summary_text = None
+
         for msg in result["messages"]:
             if hasattr(msg, "tool_calls") and msg.tool_calls:
                 for tc in msg.tool_calls:
@@ -90,8 +92,11 @@ async def agent_chat(request: ChatRequest):
                         extracted_fields = tool_data["extracted_fields"]
                     if tool_data.get("partial_update"):
                         partial_update = tool_data["partial_update"]
+                    if tool_data.get("summary"):
+                        tool_summary_text = tool_data["summary"]
+                        logger.info(f"Extracting summary: {tool_summary_text[:50]}...")
                 except (json.JSONDecodeError, TypeError):
-                    pass
+                    logger.error(f"Failed to parse tool message: {msg.content}")
 
         # Get the final AI response (last AIMessage without tool_calls)
         for msg in reversed(result["messages"]):
@@ -101,6 +106,13 @@ async def agent_chat(request: ChatRequest):
 
         if not response_text:
             response_text = "I processed your request. Please check the results."
+
+        logger.info(f"Response text: {response_text}. Tool summary: {tool_summary_text}")
+        # If a tool produced a summary, forcefully append it if the LLM got lazy
+        if tool_summary_text and tool_summary_text not in response_text:
+            response_text = f"{response_text}\n\nSummary:\n{tool_summary_text}".strip()
+
+
 
         # Enforce Response Formatting Rules as a safety net
         if "log_interaction" in tools_used:
