@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 # Primary model for general tasks and extraction
 primary_llm = ChatGroq(
     api_key=settings.GROQ_API_KEY,
-    model="llama-3.3-70b-versatile",
+    model="llama-3.1-8b-instant",
     temperature=0.1,
     max_tokens=2048,
 )
