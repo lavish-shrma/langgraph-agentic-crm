@@ -76,11 +76,18 @@ async def schedule_follow_up(interaction_id: Optional[int] = None, hcp_name: Opt
             interaction.follow_up_date = parsed_date
             await session.commit()
 
+            # Get HCP name for the response
+            hcp_stmt = select(HCP).where(HCP.id == interaction.hcp_id)
+            hcp_result = await session.execute(hcp_stmt)
+            hcp = hcp_result.scalar_one_or_none()
+            hcp_name_result = hcp.name if hcp else "Unknown HCP"
+
             return json.dumps({
                 "success": True,
                 "follow_up_id": follow_up.id,
-                "message": f"SUCCESS: Follow-up scheduled for {follow_up_date} (Linked to Interaction ID: {interaction.id}). Task complete.",
+                "hcp_name": hcp_name_result,
                 "follow_up_date": follow_up_date,
+                "message": f"SUCCESS: Follow-up scheduled for {hcp_name_result} on {follow_up_date}.",
             })
 
     except ValueError:
