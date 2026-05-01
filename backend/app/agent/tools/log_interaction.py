@@ -94,7 +94,7 @@ async def log_interaction(
                 HumanMessage(content=EXTRACTION_PROMPT.format(today=today, text=text))
             ]
 
-            response = await invoke_with_retry(llm, extraction_messages)
+            response = await invoke_with_retry(llm, extraction_messages, max_retries=2)
             response_text = response.content.strip()
 
             # Clean up response - remove markdown fences if present

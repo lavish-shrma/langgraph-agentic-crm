@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 # Primary model for general tasks and extraction
 primary_llm = ChatGroq(
     api_key=settings.GROQ_API_KEY,
-    model="llama-3.1-8b-instant",
+    model="llama-3.3-70b-versatile",
     temperature=0.1,
     max_tokens=2048,
 )
@@ -22,20 +22,8 @@ secondary_llm = ChatGroq(
 )
 
 
-async def invoke_with_retry(llm, messages, max_retries=7):
-    """Invoke LLM with exponential backoff retry logic.
-
-    Args:
-        llm: The LangChain LLM instance.
-        messages: List of messages to send.
-        max_retries: Maximum number of retries.
-
-    Returns:
-        The LLM response.
-
-    Raises:
-        Exception: If all retries are exhausted.
-    """
+async def invoke_with_retry(llm, messages, max_retries=5):
+    """Invoke LLM with exponential backoff retry logic."""
     for attempt in range(max_retries):
         try:
             response = await llm.ainvoke(messages)
@@ -50,10 +38,9 @@ async def invoke_with_retry(llm, messages, max_retries=7):
 
             # Special handling for Rate Limit errors
             if "429" in error_msg or "rate" in error_msg.lower():
-                wait_time = 20  # Increased wait time
+                wait_time = 5  # Shorter wait but more retries
                 logger.info(f"Rate limit hit. Waiting {wait_time}s before retry...")
             else:
-                # Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s
                 wait_time = 2 ** attempt
                 logger.info(f"Retrying in {wait_time}s...")
             
