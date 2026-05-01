@@ -44,50 +44,82 @@ Natural language description:
 
 
 @tool
-async def log_interaction(text: str, hcp_name: Optional[str] = None, interaction_type: Optional[str] = None, date_str: Optional[str] = None) -> str:
-    """Log a new HCP interaction from natural language text or structured data.
-
+async def log_interaction(
+    text: str, 
+    hcp_name: Optional[str] = None, 
+    interaction_type: Optional[str] = None, 
+    date_str: Optional[str] = None,
+    topics_discussed: Optional[str] = None,
+    sentiment: Optional[str] = None,
+    outcome: Optional[str] = None,
+    follow_up_notes: Optional[str] = None,
+    follow_up_date: Optional[str] = None,
+    samples_distributed: Optional[list[dict]] = None
+) -> str:
+    """Log a new HCP interaction.
+    
     Args:
-        text: Natural language description of the interaction OR structured summary.
-        hcp_name: Optional explicit HCP name (if already known).
-        interaction_type: Optional explicit interaction type.
-        date_str: Optional explicit date in YYYY-MM-DD format.
+        text: Natural language description of the interaction.
+        hcp_name: Name of the HCP.
+        interaction_type: Type of interaction (Meeting, Call, etc.).
+        date_str: Date of interaction (YYYY-MM-DD).
+        topics_discussed: Main topics discussed.
+        sentiment: Sentiment of the interaction (positive, neutral, negative).
+        outcome: Outcome of the interaction.
+        follow_up_notes: Any notes for follow-up.
+        follow_up_date: Date for follow-up (YYYY-MM-DD).
+        samples_distributed: List of samples given, e.g. [{"product_name": "X", "quantity": 1}]
     """
     try:
-        # Use LLM to extract structured data from natural language
-        llm = get_primary_llm()
         today = date.today().isoformat()
+        
+        # If the agent already extracted the key fields, we can skip the internal LLM call
+        if hcp_name and (topics_discussed or outcome):
+            logger.info("Essential fields provided by agent. Skipping internal LLM extraction.")
+            extracted = {
+                "hcp_name": hcp_name,
+                "interaction_type": interaction_type or "Meeting",
+                "date": date_str or today,
+                "topics_discussed": topics_discussed,
+                "sentiment": sentiment or "neutral",
+                "outcome": outcome,
+                "follow_up_notes": follow_up_notes,
+                "follow_up_date": follow_up_date,
+                "samples": samples_distributed or []
+            }
+        else:
+            # Use LLM to extract structured data from natural language
+            llm = get_primary_llm()
+            extraction_messages = [
+                HumanMessage(content=EXTRACTION_PROMPT.format(today=today, text=text))
+            ]
 
-        extraction_messages = [
-            HumanMessage(content=EXTRACTION_PROMPT.format(today=today, text=text))
-        ]
+            response = await invoke_with_retry(llm, extraction_messages)
+            response_text = response.content.strip()
 
-        response = await invoke_with_retry(llm, extraction_messages)
-        response_text = response.content.strip()
+            # Clean up response - remove markdown fences if present
+            if response_text.startswith("```"):
+                lines = response_text.split("\n")
+                response_text = "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
+                response_text = response_text.strip()
 
-        # Clean up response - remove markdown fences if present
-        if response_text.startswith("```"):
-            lines = response_text.split("\n")
-            response_text = "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
-            response_text = response_text.strip()
+            if response_text.startswith("{") is False:
+                # Try to find JSON in the response
+                start = response_text.find("{")
+                end = response_text.rfind("}") + 1
+                if start != -1 and end > start:
+                    response_text = response_text[start:end]
 
-        if response_text.startswith("{") is False:
-            # Try to find JSON in the response
-            start = response_text.find("{")
-            end = response_text.rfind("}") + 1
-            if start != -1 and end > start:
-                response_text = response_text[start:end]
+            extracted = json.loads(response_text)
+            logger.info(f"Extracted fields via internal LLM: {extracted}")
 
-        extracted = json.loads(response_text)
-        logger.info(f"Extracted fields: {extracted}")
-
-        # Override with explicit values if provided
-        if hcp_name:
-            extracted["hcp_name"] = hcp_name
-        if interaction_type:
-            extracted["interaction_type"] = interaction_type
-        if date_str:
-            extracted["date"] = date_str
+            # Override with explicit values if provided
+            if hcp_name:
+                extracted["hcp_name"] = hcp_name
+            if interaction_type:
+                extracted["interaction_type"] = interaction_type
+            if date_str:
+                extracted["date"] = date_str
 
         # Validate required fields
         if not extracted.get("hcp_name"):

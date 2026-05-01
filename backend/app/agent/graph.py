@@ -1,5 +1,6 @@
 import logging
 from langgraph.graph import StateGraph, END
+from langchain_core.messages import ToolMessage
 
 from app.agent.state import AgentState
 from app.agent.nodes import agent_node, tool_node
@@ -15,6 +16,12 @@ def should_continue(state: AgentState) -> str:
     """
     messages = state["messages"]
     last_message = messages[-1]
+
+    # Safety break: count tool messages in the current run
+    tool_messages = [m for m in messages if isinstance(m, ToolMessage)]
+    if len(tool_messages) > 5:
+        logger.warning("Safety break: Too many tool calls detected. Ending graph execution.")
+        return END
 
     if hasattr(last_message, "tool_calls") and last_message.tool_calls:
         return "tool_node"

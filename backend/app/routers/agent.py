@@ -4,7 +4,7 @@ import datetime
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 
 from app.agent.graph import agent_graph
 from app.agent.prompts import SYSTEM_PROMPT
@@ -54,7 +54,7 @@ async def agent_chat(request: ChatRequest):
         # Add the new user message
         messages.append(HumanMessage(content=request.message))
 
-        # Invoke the graph
+        # Invoke the graph with manual loop control and circuit breaker
         initial_state = {
             "messages": messages,
             "current_hcp_id": None,
@@ -62,8 +62,39 @@ async def agent_chat(request: ChatRequest):
             "tool_output": None,
             "suggested_followups": [],
         }
+        
+        steps = 0
+        result = initial_state
+        
+        # We use astream to monitor and control the execution flow
+        async for state in agent_graph.astream(
+            initial_state, 
+            stream_mode="values", 
+            config={"recursion_limit": 10}
+        ):
+            steps += 1
+            result = state
+            
+            messages = state.get("messages", [])
+            if not messages:
+                continue
+                
+            last_msg = messages[-1]
+            
+            # Fix 1: Disable Tool Chaining
+            # If we just received a tool result, and the agent tries to call another tool, we stop.
+            # A normal flow is: Human -> AI (Tool) -> Tool (Result) -> AI (Response)
+            # If it goes: Human -> AI (Tool) -> Tool (Result) -> AI (Tool) ... we stop at the second AI (Tool).
+            if len(messages) >= 3:
+                tool_messages = [m for m in messages if isinstance(m, ToolMessage)]
+                if tool_messages and isinstance(last_msg, AIMessage) and last_msg.tool_calls:
+                    logger.warning("Tool chaining detected in router. Forcing stop to prevent infinite loop.")
+                    break
 
-        result = await agent_graph.ainvoke(initial_state)
+            # Fix 2: Circuit Breaker
+            if steps >= 5:
+                logger.warning(f"Circuit breaker fired: reached {steps} steps. Forcing termination.")
+                break
 
         # Extract response from the last AI message
         response_text = ""
@@ -108,31 +139,74 @@ async def agent_chat(request: ChatRequest):
             response_text = "I processed your request. Please check the results."
 
         logger.info(f"Response text: {response_text}. Tool summary: {tool_summary_text}")
-        # If a tool produced a summary, forcefully append it if the LLM got lazy
-        if tool_summary_text and tool_summary_text not in response_text:
-            response_text = f"{response_text}\n\nSummary:\n{tool_summary_text}".strip()
+        
+        # Fix 1: Build response directly from tool output to eliminate hallucinations
+        if "get_hcp_profile" in tools_used:
+            # We already have profile/interactions in tool_data if successful
+            # Reconstruct a clean profile presentation
+            for msg in result["messages"]:
+                if isinstance(msg, ToolMessage) and msg.name == "get_hcp_profile":
+                    try:
+                        data = json.loads(msg.content)
+                        if data.get("success"):
+                            p = data["profile"]
+                            response_text = f"Profile for {p['name']} ({p['specialty']})\n"
+                            response_text += f"Institution: {p['institution']}\n"
+                            response_text += f"Location: {p['location']}\n"
+                            response_text += f"Contact: {p['email']} | {p['phone']}\n\n"
+                            
+                            if data.get("recent_interactions"):
+                                response_text += "Recent Interactions:\n"
+                                for i in data["recent_interactions"]:
+                                    response_text += f"- {i['date']}: {i['type']} ({i['outcome']})\n"
+                            else:
+                                response_text += "No recent interactions found."
+                        else:
+                            response_text = data.get("message", "Failed to retrieve profile.")
+                    except:
+                        pass
+                    break
 
+        elif "log_interaction" in tools_used:
+            response_text = f"Interaction logged successfully. ID: {interaction_id or 'unknown'}"
+            if suggested_follow_ups:
+                response_text += "\n\nSuggested Follow-ups:\n" + "\n".join([f"- {s}" for s in suggested_follow_ups])
 
-
-        # Enforce Response Formatting Rules as a safety net
-        if "log_interaction" in tools_used:
-            if not response_text.startswith("Interaction logged successfully."):
-                response_text = f"Interaction logged successfully. ID: {interaction_id or 'unknown'}\n\n{response_text}"
         elif "edit_interaction" in tools_used:
-            if not response_text.startswith("Interaction updated successfully."):
-                response_text = f"Interaction updated successfully. ID: {interaction_id or 'unknown'}\n\n{response_text}"
+            response_text = f"Interaction updated successfully. ID: {interaction_id or 'unknown'}"
+
         elif "schedule_follow_up" in tools_used:
-            # We don't overwrite if it looks like the LLM already formatted it correctly, 
-            # but if it has "Interaction logged", we definitely clean it up.
-            if "Interaction logged successfully" in response_text:
-                # Most likely the LLM hallucinated the prefix, we'll try to use the Tool outcome directly or clean it.
-                response_text = response_text.replace("Interaction logged successfully.", "Follow-up scheduled successfully.")
-        elif "get_hcp_profile" in tools_used or "summarize_interactions" in tools_used:
-            # Strip any accidental "Interaction logged successfully" prefix
-            if "Interaction logged successfully" in response_text:
-                lines = response_text.split('\n')
-                filter_lines = [l for l in lines if "Interaction logged successfully" not in l and "ID:" not in l]
-                response_text = '\n'.join(filter_lines).strip()
+            # Try to find tool output for name and date
+            tool_msg_found = False
+            for msg in result["messages"]:
+                if isinstance(msg, ToolMessage) and msg.name == "schedule_follow_up":
+                    try:
+                        data = json.loads(msg.content)
+                        if data.get("success"):
+                            hcp_name_tool = data.get("hcp_name", "HCP")
+                            follow_up_date = data.get("follow_up_date", "specified date")
+                            response_text = f"Follow-up scheduled successfully for {hcp_name_tool} on {follow_up_date}."
+                            tool_msg_found = True
+                        else:
+                            response_text = data.get("message", "Failed to schedule follow-up.")
+                            tool_msg_found = True
+                    except:
+                        pass
+                    break
+            if not tool_msg_found:
+                response_text = "I attempted to schedule the follow-up, but could not confirm the details. Please check the follow-up list."
+
+        elif "summarize_interactions" in tools_used:
+            if tool_summary_text:
+                response_text = tool_summary_text
+            else:
+                for msg in result["messages"]:
+                    if isinstance(msg, ToolMessage) and msg.name == "summarize_interactions":
+                        try:
+                            data = json.loads(msg.content)
+                            response_text = data.get("summary", response_text)
+                        except:
+                            pass
 
         return ChatResponse(
             response=response_text.strip(),

@@ -1,0 +1,10 @@
+{
+  "response": "Dr. Priya Sharma's profile is as follows:\n\n**Profile:**\n\n* Name: Dr. Priya Sharma\n* Specialty: Cardiology\n* Institution: Apollo Hospital, Mumbai\n* Email: priya.sharma@apollo.com\n* Phone: +91-9876543210\n* Location: Mumbai, Maharashtra\n\n**Recent Interactions:**\n\n1. Meeting on 2026-04-30 at Apollo Hospital, Mumbai\n\t* Topics: CardioMax efficacy\n\t* Sentiment: Positive\n\t* Outcome: Agreed to trial it on 5 patients\n2. Meeting on 2026-04-29 at Apollo Hospital, Mumbai\n\t* Topics: CardioMax efficacy\n\t* Sentiment: Positive\n\t* Outcome: Agreed to trial on 5 patients\n3. Meeting on 2026-04-22 at Apollo Hospital, Mumbai\n\t* Topics: Trial's progress and potential future research directions\n\t* Sentiment: Neutral\n\t* Outcome: Further tests are required\n4. Meeting on 2026-04-22 at Apollo Hospital, Mumbai\n\t* Topics: CardioMax trial progress\n\t* Sentiment: Positive\n\t* Outcome: Expansion of the trial to more patients\n5. Meeting on 2026-04-22 at Apollo Hospital, Mumbai\n\t* Topics: Expansion of the trial to more patients and additional research opportunities\n\t* Sentiment: Positive\n\t* Outcome: Expanded trial to more patients\n\n**Total Interactions:** 5",
+  "interaction_id": null,
+  "tools_used": [
+    "get_hcp_profile"
+  ],
+  "suggested_follow_ups": [],
+  "extracted_fields": null,
+  "partial_update": null
+}

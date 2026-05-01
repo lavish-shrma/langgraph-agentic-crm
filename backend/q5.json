@@ -1,0 +1,10 @@
+{
+  "response": "Recent interactions with Dr. Vikram Patel, an endocrinologist at AIIMS, New Delhi, have centered on discussions of new diabetes and cardiovascular management solutions. Key themes included the introduction of GlucoStable, a diabetes management solution, and CardioMax, with the doctor expressing initial interest in both. While Dr. Patel expressed concerns about the cost of GlucoStable for patients, he provided positive feedback on its follow-up results. Additionally, a follow-up call regarding NeuroCalm prescription trends yielded positive patient feedback, but the doctor requested more data. Action items include providing more information on patient assistance programs for GlucoStable and gathering additional data on NeuroCalm. Overall, sentiment trends were mixed, with a neutral tone during the initial GlucoStable discussion, a positive tone during the follow-up meeting, and a negative tone during the NeuroCalm call, highlighting the need for ongoing engagement and data-driven discussions to address the doctor's concerns and interests.",
+  "interaction_id": null,
+  "tools_used": [
+    "summarize_interactions"
+  ],
+  "suggested_follow_ups": [],
+  "extracted_fields": null,
+  "partial_update": null
+}

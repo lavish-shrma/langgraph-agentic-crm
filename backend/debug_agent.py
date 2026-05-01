@@ -36,5 +36,5 @@ async def debug_agent(message: str):
         print(f"\nERROR: {str(e)}")
 
 if __name__ == "__main__":
-    test_msg = "Summarize my last 3 visits with Dr. Vikram Patel."
+    test_msg = sys.argv[1] if len(sys.argv) > 1 else "Summarize my last 3 visits with Dr. Vikram Patel."
     asyncio.run(debug_agent(test_msg))

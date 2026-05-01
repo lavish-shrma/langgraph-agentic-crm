@@ -16,7 +16,7 @@ primary_llm = ChatGroq(
 # Secondary model for heavier reasoning (summarization)
 secondary_llm = ChatGroq(
     api_key=settings.GROQ_API_KEY,
-    model="llama-3.3-70b-versatile",
+    model="llama-3.1-8b-instant",
     temperature=0.3,
     max_tokens=2048,
 )
@@ -48,10 +48,10 @@ async def invoke_with_retry(llm, messages, max_retries=7):
                 logger.error(f"All {max_retries} LLM call attempts failed.")
                 raise Exception("AI service temporarily unavailable. Please try again in a moment.")
 
-            # Special handling for 429 (Rate Limit) errors
-            if "429" in error_msg:
-                wait_time = 30
-                logger.info(f"Rate limit hit (429). Waiting {wait_time}s before retry...")
+            # Special handling for Rate Limit errors
+            if "429" in error_msg or "rate" in error_msg.lower():
+                wait_time = 20  # Increased wait time
+                logger.info(f"Rate limit hit. Waiting {wait_time}s before retry...")
             else:
                 # Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s
                 wait_time = 2 ** attempt
@@ -66,5 +66,5 @@ def get_primary_llm():
 
 
 def get_secondary_llm():
-    """Get the secondary LLM (llama-3.3-70b-versatile) for heavier tasks."""
+    """Get the secondary LLM (llama-3.1-8b-instant) for heavier tasks."""
     return secondary_llm

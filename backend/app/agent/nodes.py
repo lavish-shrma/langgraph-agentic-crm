@@ -14,14 +14,20 @@ async def agent_node(state: AgentState) -> dict:
     """Agent node that calls the LLM with tools bound.
 
     The LLM decides whether to call a tool or respond directly.
+    To prevent infinite loops, we disable tool-calling if the last message was a tool result.
     """
     llm = get_primary_llm()
-    llm_with_tools = llm.bind_tools(ALL_TOOLS)
-
     messages = state["messages"]
 
-    response = await invoke_with_retry(llm_with_tools, messages)
-
+    # If the last message is a ToolMessage, we force a final text response by not binding tools
+    if messages and isinstance(messages[-1], ToolMessage):
+        logger.info("Tool result received. Invoking LLM without tools to prevent chaining/loops.")
+        response = await invoke_with_retry(llm, messages)
+    else:
+        # Fix 2: Temperature 0 for tool selection to eliminate randomness
+        llm_with_tools = llm.bind(temperature=0).bind_tools(ALL_TOOLS)
+        response = await invoke_with_retry(llm_with_tools, messages)
+    
     return {"messages": [response]}
 
 

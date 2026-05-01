@@ -1,0 +1,34 @@
+{
+  "response": "Interaction logged successfully. ID: 89\nFollow up with Dr. Rajesh Mehta to discuss efficacy of CardioMax progress\nShare additional clinical data on discussed products with Dr. Rajesh Mehta\nSchedule next visit with Dr. Rajesh Mehta at Tata Memorial Hospital, Mumbai to review patient outcomes",
+  "interaction_id": 89,
+  "tools_used": [
+    "log_interaction"
+  ],
+  "suggested_follow_ups": [
+    "Follow up with Dr. Rajesh Mehta to discuss efficacy of CardioMax progress",
+    "Share additional clinical data on discussed products with Dr. Rajesh Mehta",
+    "Schedule next visit with Dr. Rajesh Mehta at Tata Memorial Hospital, Mumbai to review patient outcomes"
+  ],
+  "extracted_fields": {
+    "hcp_id": 2,
+    "hcp_name": "Dr. Rajesh Mehta",
+    "interaction_type": "visit",
+    "date": "2026-04-30",
+    "time": null,
+    "attendees": null,
+    "topics_discussed": "efficacy of CardioMax",
+    "materials_shared": null,
+    "sentiment": "positive",
+    "outcome": "agreed to trial it",
+    "follow_up_notes": "Follow up next week",
+    "follow_up_date": "2026-05-07",
+    "location": "Tata Memorial Hospital, Mumbai",
+    "samples_distributed": [
+      {
+        "product_name": "CardioMax 10mg",
+        "quantity": 3
+      }
+    ]
+  },
+  "partial_update": null
+}

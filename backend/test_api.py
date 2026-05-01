@@ -1,11 +1,16 @@
 import httpx
 import asyncio
 import json
+import sys
 
-async def run():
-    async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.post("http://localhost:8000/api/agent/chat", json={"message": "Summarize my last 3 visits with Dr. Vikram Patel.", "conversation_history": []})
-        with open("test_api_out.json", "w") as f:
-            json.dump(r.json(), f, indent=2)
+async def run(message, out_file):
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        r = await client.post("http://localhost:8000/api/agent/chat", json={"message": message, "conversation_history": []})
+        data = r.json()
+        with open(out_file, "w") as f:
+            json.dump(data, f, indent=2)
 
-asyncio.run(run())
+if __name__ == "__main__":
+    msg = sys.argv[1]
+    out = sys.argv[2]
+    asyncio.run(run(msg, out))
